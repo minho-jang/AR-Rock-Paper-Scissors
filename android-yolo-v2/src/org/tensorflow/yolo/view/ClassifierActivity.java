@@ -23,6 +23,7 @@ import android.view.View;
 import android.widget.Toast;
 
 import com.google.ar.core.Anchor;
+import com.google.ar.core.Frame;
 import com.google.ar.core.HitResult;
 import com.google.ar.core.Plane;
 import com.google.ar.sceneform.AnchorNode;
@@ -90,6 +91,7 @@ public class ClassifierActivity extends CameraActivity implements OnImageAvailab
     private FloatingActionButton hatButton;
     private Node hatNode;
     private ModelRenderable hatRenderable;
+    private boolean imageReady=false;
 
     @Override
     @SuppressWarnings({"AndroidApiChecker", "FutureReturnValueIgnored"})
@@ -123,6 +125,10 @@ public class ClassifierActivity extends CameraActivity implements OnImageAvailab
     ///////////////////////////// My Space ////////////////////////////////////////////////////
 
     private void onPlayAnimation(View unusedView) {
+
+
+
+
         if (animator == null || !animator.isRunning()) {
             AnimationData data = andyRenderable.getAnimationData(nextAnimation);
             nextAnimation = (nextAnimation + 1) % andyRenderable.getAnimationDataCount();
@@ -182,6 +188,11 @@ public class ClassifierActivity extends CameraActivity implements OnImageAvailab
      * @param unusedframeTime
      */
     private void onFrameUpdate(FrameTime unusedframeTime) {
+
+        if(imageReady){
+
+        }
+
         // If the model has not been placed yet, disable the buttons.
         if (anchorNode == null) {
             if (animationButton.isEnabled()) {
@@ -203,6 +214,48 @@ public class ClassifierActivity extends CameraActivity implements OnImageAvailab
     }
 
     private void onToggleHat(View unused) {
+        Image image = null;
+        try {
+            Frame currentFrame = arFragment.getArSceneView().getArFrame();
+            image = currentFrame.acquireCameraImage();
+
+            if (image == null) {
+                return;
+            }
+
+            if (computing) {
+                image.close();
+                return;
+            }
+
+            computing = true;
+            fillCroppedBitmap(image);
+            image.close();
+        } catch (Exception ex) {
+            if (image != null) {
+                image.close();
+            }
+            Log.e(LOGGING_TAG, ex.getMessage());
+        }catch (NoClassDefFoundError ex) {
+            if (image != null) {
+                image.close();
+            }
+            Log.e(LOGGING_TAG, ex.getMessage());
+        }
+
+        // TODO 지금 실행 안되고 있음 !
+        Log.d("TEST ClassifierActivity", "runInBackground( recognizer ) 시작");
+        runInBackground(() -> {
+            final long startTime = SystemClock.uptimeMillis();
+            final List<Recognition> results = recognizer.recognizeImage(croppedBitmap);
+            lastProcessingTimeMs = SystemClock.uptimeMillis() - startTime;
+            overlayView.setResults(results);
+            // speak(results);
+            requestRender();
+            computing = false;
+            Log.d("TEST ClassifierActivity", "결과 : " + results.toString());
+        });
+
         if (hatNode != null) {
             hatNode.setEnabled(!hatNode.isEnabled());
 
@@ -261,6 +314,8 @@ public class ClassifierActivity extends CameraActivity implements OnImageAvailab
         frameToCropTransform.invert(new Matrix());
 
         addCallback((final Canvas canvas) -> renderAdditionalInformation(canvas));
+
+        imageReady=true;
     }
 
     @Override
@@ -303,10 +358,10 @@ public class ClassifierActivity extends CameraActivity implements OnImageAvailab
     }
 
     private void fillCroppedBitmap(final Image image) {
-            Bitmap rgbFrameBitmap = Bitmap.createBitmap(previewWidth, previewHeight, Config.ARGB_8888);
-            rgbFrameBitmap.setPixels(ImageUtils.convertYUVToARGB(image, previewWidth, previewHeight),
-                    0, previewWidth, 0, 0, previewWidth, previewHeight);
-            new Canvas(croppedBitmap).drawBitmap(rgbFrameBitmap, frameToCropTransform, null);
+        Bitmap rgbFrameBitmap = Bitmap.createBitmap(previewWidth, previewHeight, Config.ARGB_8888);
+        rgbFrameBitmap.setPixels(ImageUtils.convertYUVToARGB(image, previewWidth, previewHeight),
+                0, previewWidth, 0, 0, previewWidth, previewHeight);
+        new Canvas(croppedBitmap).drawBitmap(rgbFrameBitmap, frameToCropTransform, null);
     }
 
     @Override
