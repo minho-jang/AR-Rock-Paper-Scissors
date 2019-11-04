@@ -89,9 +89,12 @@ public class ClassifierActivity extends CameraActivity implements OnImageAvailab
     private FloatingActionButton animationButton;
     // The UI to toggle wearing the hat.
     private FloatingActionButton hatButton;
+    // The UI to toggle wearing the hat.
+    private FloatingActionButton detectionButton;
     private Node hatNode;
     private ModelRenderable hatRenderable;
-    private boolean imageReady=false;
+    public boolean imageReady=false;
+    private boolean lock=true;
 
     @Override
     @SuppressWarnings({"AndroidApiChecker", "FutureReturnValueIgnored"})
@@ -120,14 +123,21 @@ public class ClassifierActivity extends CameraActivity implements OnImageAvailab
         hatButton = findViewById(R.id.hat);
         hatButton.setEnabled(false);
         hatButton.setOnClickListener(this::onToggleHat);
+
+        detectionButton = findViewById(R.id.detection);
+        detectionButton.setEnabled(false);
+        detectionButton.setOnClickListener(this::onDetection);
+
     }
 
     ///////////////////////////// My Space ////////////////////////////////////////////////////
+    private void onDetection(View unusedView) {
+        imageReady = true;
+        Log.d(TAG, "onDetection에서 imageReady = " + imageReady);
+    }
+
 
     private void onPlayAnimation(View unusedView) {
-
-
-
 
         if (animator == null || !animator.isRunning()) {
             AnimationData data = andyRenderable.getAnimationData(nextAnimation);
@@ -188,9 +198,40 @@ public class ClassifierActivity extends CameraActivity implements OnImageAvailab
      * @param unusedframeTime
      */
     private void onFrameUpdate(FrameTime unusedframeTime) {
+        if(imageReady && lock){
+            Log.d(TAG,"onFrameUpdate 실행");
+            lock=false;
+            Image image = null;
+            try {
+                Frame currentFrame = arFragment.getArSceneView().getArFrame();
+                image = currentFrame.acquireCameraImage();
 
-        if(imageReady){
+                fillCroppedBitmap(image);
+                image.close();
+            } catch (Exception ex) {
+                if (image != null) {
+                    image.close();
+                }
+                Log.e(LOGGING_TAG, ex.getMessage());
+            }catch (NoClassDefFoundError ex) {
+                if (image != null) {
+                    image.close();
+                }
+                Log.e(LOGGING_TAG, ex.getMessage());
+            }
 
+            // TODO 지금 실행 안되고 있음 !
+            Log.d("TEST ClassifierActivity", "runInBackground( recognizer ) 시작");
+            runInBackground(() -> {
+                final long startTime = SystemClock.uptimeMillis();
+                final List<Recognition> results = recognizer.recognizeImage(croppedBitmap);
+                lastProcessingTimeMs = SystemClock.uptimeMillis() - startTime;
+                overlayView.setResults(results);
+                // speak(results);
+                requestRender();
+                lock=true; //onframeupdate 락 해제
+                Log.d("TEST ClassifierActivity", "결과 : " + results.toString());
+            });
         }
 
         // If the model has not been placed yet, disable the buttons.
@@ -200,6 +241,8 @@ public class ClassifierActivity extends CameraActivity implements OnImageAvailab
                 animationButton.setEnabled(false);
                 hatButton.setBackgroundTintList(ColorStateList.valueOf(android.graphics.Color.GRAY));
                 hatButton.setEnabled(false);
+                detectionButton.setBackgroundTintList(ColorStateList.valueOf(android.graphics.Color.GRAY));
+                detectionButton.setEnabled(false);
             }
         } else {
             if (!animationButton.isEnabled()) {
@@ -209,52 +252,57 @@ public class ClassifierActivity extends CameraActivity implements OnImageAvailab
                 hatButton.setEnabled(true);
                 hatButton.setBackgroundTintList(
                         ColorStateList.valueOf(ContextCompat.getColor(this, R.color.colorPrimary)));
+                detectionButton.setEnabled(true);
+                detectionButton.setBackgroundTintList(
+                        ColorStateList.valueOf(ContextCompat.getColor(this, R.color.colorPrimary)));
             }
         }
     }
 
     private void onToggleHat(View unused) {
-        Image image = null;
-        try {
-            Frame currentFrame = arFragment.getArSceneView().getArFrame();
-            image = currentFrame.acquireCameraImage();
 
-            if (image == null) {
-                return;
-            }
-
-            if (computing) {
-                image.close();
-                return;
-            }
-
-            computing = true;
-            fillCroppedBitmap(image);
-            image.close();
-        } catch (Exception ex) {
-            if (image != null) {
-                image.close();
-            }
-            Log.e(LOGGING_TAG, ex.getMessage());
-        }catch (NoClassDefFoundError ex) {
-            if (image != null) {
-                image.close();
-            }
-            Log.e(LOGGING_TAG, ex.getMessage());
-        }
-
-        // TODO 지금 실행 안되고 있음 !
-        Log.d("TEST ClassifierActivity", "runInBackground( recognizer ) 시작");
-        runInBackground(() -> {
-            final long startTime = SystemClock.uptimeMillis();
-            final List<Recognition> results = recognizer.recognizeImage(croppedBitmap);
-            lastProcessingTimeMs = SystemClock.uptimeMillis() - startTime;
-            overlayView.setResults(results);
-            // speak(results);
-            requestRender();
-            computing = false;
-            Log.d("TEST ClassifierActivity", "결과 : " + results.toString());
-        });
+        //테스트 완료!
+//        Image image = null;
+//        try {
+//            Frame currentFrame = arFragment.getArSceneView().getArFrame();
+//            image = currentFrame.acquireCameraImage();
+//
+//            if (image == null) {
+//                return;
+//            }
+//
+//            if (computing) {
+//                image.close();
+//                return;
+//            }
+//
+//            computing = true;
+//            fillCroppedBitmap(image);
+//            image.close();
+//        } catch (Exception ex) {
+//            if (image != null) {
+//                image.close();
+//            }
+//            Log.e(LOGGING_TAG, ex.getMessage());
+//        }catch (NoClassDefFoundError ex) {
+//            if (image != null) {
+//                image.close();
+//            }
+//            Log.e(LOGGING_TAG, ex.getMessage());
+//        }
+//
+//        // TODO 지금 실행 안되고 있음 !
+//        Log.d("TEST ClassifierActivity", "runInBackground( recognizer ) 시작");
+//        runInBackground(() -> {
+//            final long startTime = SystemClock.uptimeMillis();
+//            final List<Recognition> results = recognizer.recognizeImage(croppedBitmap);
+//            lastProcessingTimeMs = SystemClock.uptimeMillis() - startTime;
+//            overlayView.setResults(results);
+//            // speak(results);
+//            requestRender();
+//            computing = false;
+//            Log.d("TEST ClassifierActivity", "결과 : " + results.toString());
+//        });
 
         if (hatNode != null) {
             hatNode.setEnabled(!hatNode.isEnabled());
@@ -315,7 +363,6 @@ public class ClassifierActivity extends CameraActivity implements OnImageAvailab
 
         addCallback((final Canvas canvas) -> renderAdditionalInformation(canvas));
 
-        imageReady=true;
     }
 
     @Override
