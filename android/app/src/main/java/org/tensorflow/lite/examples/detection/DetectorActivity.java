@@ -28,6 +28,7 @@ import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.media.ImageReader;
 import android.media.ImageReader.OnImageAvailableListener;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.util.Log;
@@ -125,6 +126,12 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
     private ModelRenderable hatRenderable;
     // Detection Button.
     private FloatingActionButton detectionButton;
+    //현재 사용자의 손 상태
+    private String currentMyHand;
+    //현재 detect 정확도
+    private Float handAccuracy;
+    //비동기
+    private AsyncTask<Void, Integer, Void> mTask;
 
     @Override
     @SuppressWarnings({"AndroidApiChecker", "FutureReturnValueIgnored"})
@@ -163,6 +170,58 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
     private void onDetection(View unusedView) {
         Log.d("TEST", "Detection Button is clicked");
         imageReady = true;
+
+        //바로 애니메이션 실행
+        if (animator == null || !animator.isRunning()) {
+            AnimationData data = andyRenderable.getAnimationData(1);
+            animator = new ModelAnimator(data, andyRenderable);
+            animator.start();
+
+            mTask = new AsyncTask<Void, Integer, Void>(){
+                @Override
+                protected Void doInBackground(Void... params)
+                {
+                    try
+                    {
+                        Log.d("TAG","lets sleep");
+                        //5초간 sleep
+                        Thread.sleep(5*1000);
+                    }
+                    catch(InterruptedException e)
+                    {
+                        e.printStackTrace();
+                    }
+
+                    return null;
+                }
+                // 작업 완료 직후에 호출되는 메소드
+                @Override
+                protected void onPostExecute(Void result)
+                {
+                    Log.d("TAG","start animation 2");
+                    AnimationData data = andyRenderable.getAnimationData(2);
+                    animator = new ModelAnimator(data, andyRenderable);
+                    animator.start();
+                }
+
+                // 외부에서 강제로 취소할때 호출되는 메소드
+                @Override
+                protected void onCancelled()
+                {
+                    Log.d("TAG","async task is cancealed");
+                }
+            };
+            mTask.execute();
+
+            Toast toast = Toast.makeText(this, data.getName(), Toast.LENGTH_SHORT);
+            Log.d(
+                    TAG,
+                    String.format(
+                            "Starting animation %s - %d ms long", data.getName(), data.getDurationMs()));
+            toast.setGravity(Gravity.CENTER, 0, 0);
+            toast.show();
+        }
+
     }
 
     private void onPlayAnimation(View unusedView) {
@@ -383,37 +442,52 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                         final List<Classifier.Recognition> results = detector.recognizeImage(croppedBitmap);
                         lastProcessingTimeMs = SystemClock.uptimeMillis() - startTime;
 
-                        cropCopyBitmap = Bitmap.createBitmap(croppedBitmap);
-                        final Canvas canvas = new Canvas(cropCopyBitmap);
-                        final Paint paint = new Paint();
-                        paint.setColor(Color.RED);
-                        paint.setStyle(Style.STROKE);
-                        paint.setStrokeWidth(2.0f);
+                        handAccuracy = results.get(0).getConfidence();
 
-                        float minimumConfidence = MINIMUM_CONFIDENCE_TF_OD_API;
-                        switch (MODE) {
-                            case TF_OD_API:
-                                minimumConfidence = MINIMUM_CONFIDENCE_TF_OD_API;
-                                break;
+                        //최대 정확도가 50% 아래면 저장 안하고 50% 위면 현재 상태 반영
+                        if(handAccuracy < 0.5){
+                            currentMyHand = "under 50percent";
+                            Log.d(TAG, "현재 상태 : " + currentMyHand + "정확도 : " + handAccuracy);
+                        }else{
+                            currentMyHand = results.get(0).getTitle();
+                            Log.d(TAG, "현재 상태 : " + currentMyHand + "정확도 : " + handAccuracy);
                         }
 
-                        final List<Classifier.Recognition> mappedRecognitions =
-                                new LinkedList<Classifier.Recognition>();
-
-                        for (final Classifier.Recognition result : results) {
-                            final RectF location = result.getLocation();
-                            if (location != null && result.getConfidence() >= minimumConfidence) {
-                                canvas.drawRect(location, paint);
-
-                                cropToFrameTransform.mapRect(location);
-
-                                result.setLocation(location);
-                                mappedRecognitions.add(result);
-                            }
-                        }
-
-                        tracker.trackResults(mappedRecognitions, currTimestamp);
-                        trackingOverlay.postInvalidate();
+//                        cropCopyBitmap = Bitmap.createBitmap(croppedBitmap);
+//                        final Canvas canvas = new Canvas(cropCopyBitmap);
+//                        final Paint paint = new Paint();
+//                        paint.setColor(Color.RED);
+//                        paint.setStyle(Style.STROKE);
+//                        paint.setStrokeWidth(2.0f);
+//
+//                        float minimumConfidence = MINIMUM_CONFIDENCE_TF_OD_API;
+//                        switch (MODE) {
+//                            case TF_OD_API:
+//                                minimumConfidence = MINIMUM_CONFIDENCE_TF_OD_API;
+//                                break;
+//                        }
+//
+//                        final List<Classifier.Recognition> mappedRecognitions =
+//                                new LinkedList<Classifier.Recognition>();
+//
+//                        String temp_maxscore=null;
+//
+//                        for (final Classifier.Recognition result : results) {
+//                            final RectF location = result.getLocation();
+//                            if (location != null && result.getConfidence() >= minimumConfidence) {
+//
+//                                //canvas.drawRect(location, paint);
+//                                //Log.d(TAG,result.toString()) ;
+//
+//                                cropToFrameTransform.mapRect(location);
+//
+//                                result.setLocation(location);
+//                                mappedRecognitions.add(result);
+//                            }
+//                        }
+//
+//                        tracker.trackResults(mappedRecognitions, currTimestamp);
+//                        trackingOverlay.postInvalidate();
 
                         computingDetection = false;
 

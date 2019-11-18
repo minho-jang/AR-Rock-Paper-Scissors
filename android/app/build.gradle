@@ -59,6 +59,11 @@ sceneform.asset('sampledata/models/andy_dance.fbx',
         'src/main/res/raw/andy_dance',
         ['sampledata/models/andy_wave_r.fbx', 'sampledata/models/andy_wave_l.fbx'])
 
+sceneform.asset('sampledata/models/hand_1.fbx',
+        'default',
+        'sampledata/models/hand_1.sfa',
+        'src/main/res/raw/hand_1')
+
 sceneform.asset('sampledata/models/baseball-cap.gltf',
         'default',
         'sampledata/models/baseball-cap.sfa',

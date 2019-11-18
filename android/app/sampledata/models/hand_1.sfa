@@ -1,0 +1,76 @@
+{
+  animations: [
+    {
+      clips: [
+        {
+          name: 'Armature_hand|idle',
+        },
+        {
+          name: 'Armature_hand|fist',
+        },
+        {
+          name: 'Armature_hand|paper',
+        },
+        {
+          name: 'Armature_hand|pistol',
+        },
+      ],
+      path: 'sampledata/models/hand_1.fbx',
+    },
+  ],
+  materials: [
+    {
+      name: 'hand_1',
+      parameters: [
+        {
+          baseColor: [
+            1,
+            1,
+            1,
+            1,
+          ],
+        },
+        {
+          baseColorMap: null,
+        },
+        {
+          normalMap: null,
+        },
+        {
+          interpolatedColor: null,
+        },
+        {
+          metallic: 0,
+        },
+        {
+          metallicMap: null,
+        },
+        {
+          roughness: 1,
+        },
+        {
+          roughnessMap: null,
+        },
+        {
+          opacity: null,
+        },
+      ],
+      source: 'build/sceneform_sdk/default_materials/fbx_material.sfm',
+    },
+  ],
+  model: {
+    attributes: [
+      'Position',
+      'TexCoord',
+      'Orientation',
+      'BoneIndices',
+      'BoneWeights',
+    ],
+    collision: {},
+    file: 'sampledata/models/hand_1.fbx',
+    name: 'hand_1',
+    recenter: 'root',
+    scale: 0.53633399999999998,
+  },
+  version: '0.54:2',
+}
