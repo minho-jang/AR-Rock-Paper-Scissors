@@ -14,8 +14,10 @@
 project.buildDir = 'gradleBuild'
 getProject().setBuildDir('gradleBuild')
 project.ext.ASSET_DIR = projectDir.toString() + '/assets'
-assert file(project.ext.ASSET_DIR + "/tiny-yolo-voc-graph.pb").exists()
-assert file(project.ext.ASSET_DIR + "/tiny-yolo-voc-labels.txt").exists()
+//assert file(project.ext.ASSET_DIR + "/tiny-yolo-voc-graph.pb").exists()
+//assert file(project.ext.ASSET_DIR + "/tiny-yolo-voc-labels.txt").exists()
+//assert file(project.ext.ASSET_DIR + "/yolov2-tiny-voc.pb").exists()
+//assert file(project.ext.ASSET_DIR + "/tiny-yolo-voc-labels_rsp.txt").exists()
 
 buildscript {
     repositories {
@@ -126,3 +128,9 @@ sceneform.asset('sampledata/models/baseball-cap.gltf',
         'default',
         'sampledata/models/baseball-cap.sfa',
         'src/main/res/raw/baseball_cap')
+
+// 손
+sceneform.asset('sampledata/models/pm_hand.fbx',
+        'default',
+        'sampledata/models/pm_hand.sfa',
+        'src/main/res/raw/pm_hand')

@@ -50,16 +50,16 @@ public class OverlayView extends View {
             callback.drawCallback(canvas);
         }
 
-        if (results != null) {
-            for (int i = 0; i < results.size(); i++) {
-                RectF box = reCalcSize(results.get(i).getLocation());
-                String title = results.get(i).getTitle() + ":"
-                        + String.format("%.2f", results.get(i).getConfidence());
-                paint.setColor(colors.get(results.get(i).getId()));
-                canvas.drawRect(box, paint);
-                canvas.drawText(title, box.left, box.top, paint);
-            }
-        }
+//        if (results != null) {
+//            for (int i = 0; i < results.size(); i++) {
+//                RectF box = reCalcSize(results.get(i).getLocation());
+//                String title = results.get(i).getTitle() + ":"
+//                        + String.format("%.2f", results.get(i).getConfidence());
+//                paint.setColor(colors.get(results.get(i).getId()));
+//                canvas.drawRect(box, paint);
+//                canvas.drawText(title, box.left, box.top, paint);
+//            }
+//        }
     }
 
     public void setResults(final List<Recognition> results) {

@@ -20,6 +20,18 @@
             android:id="@+id/arcore_fragment"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
+
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/detection"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|center"
+            android:layout_margin="30dp"
+            android:clickable="true"
+            android:focusable="true"
+            app:backgroundTint="@android:color/darker_gray"
+            app:elevation="1dp"
+            app:srcCompat="@drawable/rsp" />
     </FrameLayout>
 
 
@@ -35,7 +47,8 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:srcCompat="@drawable/playlist_play"/>
+        app:srcCompat="@drawable/playlist_play"
+        android:visibility="gone"/>
 
     <android.support.design.widget.FloatingActionButton
         android:id="@+id/hat"
@@ -50,22 +63,9 @@
         app:layout_constraintHorizontal_bias="0.80"
         app:layout_constraintHorizontal_chainStyle="spread"
         app:layout_constraintStart_toStartOf="parent"
-        app:srcCompat="@drawable/hat_icon" />
+        app:srcCompat="@drawable/hat_icon"
+        android:visibility="gone"/>
 
-    <android.support.design.widget.FloatingActionButton
-        android:id="@+id/detection"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:clickable="true"
-        android:focusable="true"
-        app:backgroundTint="@android:color/darker_gray"
-        app:elevation="1dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.2"
-        app:layout_constraintHorizontal_chainStyle="spread"
-        app:layout_constraintStart_toStartOf="parent"
-        app:srcCompat="@drawable/hat_icon" />
 </android.support.constraint.ConstraintLayout>
 
 

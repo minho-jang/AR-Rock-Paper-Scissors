@@ -133,6 +133,9 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
     //비동기
     private AsyncTask<Void, Integer, Void> mTask;
 
+    private ModelAnimator Handanimator;
+    private int handAnimaitonIndex = 1;
+
     @Override
     @SuppressWarnings({"AndroidApiChecker", "FutureReturnValueIgnored"})
     protected void onCreate(Bundle savedInstanceState) {
@@ -144,7 +147,9 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
         modelLoader = new ModelLoader(this);
 
         modelLoader.loadModel(ANDY_RENDERABLE, R.raw.andy_dance);
-        modelLoader.loadModel(HAT_RENDERABLE, R.raw.baseball_cap);
+        // modelLoader.loadModel(HAT_RENDERABLE, R.raw.baseball_cap);
+        modelLoader.loadModel(HAT_RENDERABLE, R.raw.hand_1);
+
 
         // When a plane is tapped, the model is placed on an Anchor node anchored to the plane.
         arFragment.setOnTapArPlaneListener(this::onPlaneTap);
@@ -171,7 +176,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
         Log.d("TEST", "Detection Button is clicked");
         imageReady = true;
 
-        //바로 애니메이션 실행
+        // 바로 애니메이션 실행
         if (animator == null || !animator.isRunning()) {
             AnimationData data = andyRenderable.getAnimationData(1);
             animator = new ModelAnimator(data, andyRenderable);
@@ -222,6 +227,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
             toast.show();
         }
 
+        handAnimaitonIndex++;
     }
 
     private void onPlayAnimation(View unusedView) {
@@ -268,7 +274,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
             andy.setBoneAttachment(HAT_BONE_NAME, boneNode);
             hatNode.setRenderable(hatRenderable);
             hatNode.setParent(boneNode);
-            hatNode.setWorldScale(Vector3.one());
+            hatNode.setWorldScale(new Vector3(0.2f, 0.2f, 0.2f));
             hatNode.setWorldRotation(Quaternion.identity());
             Vector3 pos = hatNode.getWorldPosition();
 
@@ -286,9 +292,9 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
      */
     private void onFrameUpdate(FrameTime unusedframeTime) {
 
-        if (imageReady) {
-            onImageAvailable(null);
-        }
+//        if (imageReady) {
+//            onImageAvailable(null);
+//        }
 
         // If the model has not been placed yet, disable the buttons.
         if (anchorNode == null) {

@@ -7,9 +7,12 @@ import android.graphics.Camera;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Typeface;
+import android.media.AudioManager;
 import android.media.Image;
 import android.media.ImageReader;
 import android.media.ImageReader.OnImageAvailableListener;
+import android.media.SoundPool;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.support.design.widget.FloatingActionButton;
@@ -44,6 +47,7 @@ import org.tensorflow.yolo.util.ImageUtils;
 import org.tensorflow.yolo.view.components.BorderedText;
 
 import java.util.List;
+import java.util.Random;
 import java.util.Vector;
 
 import static org.tensorflow.yolo.Config.INPUT_SIZE;
@@ -96,10 +100,23 @@ public class ClassifierActivity extends CameraActivity implements OnImageAvailab
     public boolean imageReady=false;
     private boolean lock=true;
 
+    SoundPool soundPool;
+    final int soundCount = 1;
+    int gameReady_soundID = 0;
+
+    private ModelRenderable handRenderable;
+    private SkeletonNode hand;
+    private static final int HAND_RENDERABLE = 3;
+    private String currentMyHand = "rock";
+
+    //비동기
+    private AsyncTask<Void, Integer, Void> mTask;
+
     @Override
     @SuppressWarnings({"AndroidApiChecker", "FutureReturnValueIgnored"})
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         // setContentView(R.layout.activity_camera);
         arFragment = (ArFragment) getSupportFragmentManager().findFragmentById(R.id.arcore_fragment);
 
@@ -107,6 +124,7 @@ public class ClassifierActivity extends CameraActivity implements OnImageAvailab
 
         modelLoader.loadModel(ANDY_RENDERABLE, R.raw.andy_dance);
         modelLoader.loadModel(HAT_RENDERABLE, R.raw.baseball_cap);
+        modelLoader.loadModel(HAND_RENDERABLE, R.raw.pm_hand);
 
         // When a plane is tapped, the model is placed on an Anchor node anchored to the plane.
         arFragment.setOnTapArPlaneListener(this::onPlaneTap);
@@ -128,21 +146,119 @@ public class ClassifierActivity extends CameraActivity implements OnImageAvailab
         detectionButton.setEnabled(false);
         detectionButton.setOnClickListener(this::onDetection);
 
+        // 사운드 설정
+        soundPool = new SoundPool(
+                soundCount,
+                AudioManager.STREAM_MUSIC,
+                0       // 음질 기본값
+        );
+
+        gameReady_soundID = soundPool.load(
+                this,
+                R.raw.game_ready,
+                1
+        );
     }
 
-    ///////////////////////////// My Space ////////////////////////////////////////////////////
+    ////////////////////////////// My Space ///////////////////////////////////////////////////
     private void onDetection(View unusedView) {
         imageReady = true;
         Log.d(TAG, "onDetection에서 imageReady = " + imageReady);
+
+        AnimationData data = handRenderable.getAnimationData(0);
+        animator = new ModelAnimator(data, handRenderable);
+        animator.start();
+
+        // 사운드 재생
+        soundPool.play(
+                gameReady_soundID,
+                1,
+                1,
+                0,
+                0,
+                1
+        );
+
+        Random random = new Random();
+        // 0 주먹, 1 보, 2 가위
+        int randomHand = random.nextInt(3);
+        Log.d("TEST", "random : " + randomHand);
+
+        mTask = new AsyncTask<Void, Integer, Void>() {
+            @Override
+            protected Void doInBackground(Void... params) {
+                try {
+                    Log.d("TAG", "lets sleep");
+                    // 3초간 sleep
+                    Thread.sleep(17 * 100);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
+                return null;
+            }
+
+            // 작업 완료 직후에 호출되는 메소드
+            @Override
+            protected void onPostExecute(Void result) {
+                Log.d("TAG", "hand random");
+                AnimationData data = handRenderable.getAnimationData(randomHand);
+                animator = new ModelAnimator(data, handRenderable);
+                animator.start();
+
+                if (randomHand == 0 && currentMyHand.equals("paper") ||
+                        randomHand == 1 && currentMyHand.equals("scissors") ||
+                        randomHand == 2 && currentMyHand.equals("rock")) {
+                    showToast("이겼다 !!");
+                }
+                // 지는
+                else if (randomHand == 0 && currentMyHand.equals("scissors") ||
+                        randomHand == 1 && currentMyHand.equals("rock") ||
+                        randomHand == 2 && currentMyHand.equals("paper")) {
+                    showToast("졌다 !!");
+                }
+                // 비겨
+                else {
+                    showToast("비겼다 !!");
+                }
+            }
+
+            // 외부에서 강제로 취소할때 호출되는 메소드
+            @Override
+            protected void onCancelled() {
+                Log.d("TAG", "async task is cancealed");
+            }
+        };
+        mTask.execute();
     }
 
+    void showToast (String str) {
+        Toast toast = Toast.makeText(this, str, Toast.LENGTH_SHORT);
+        toast.setGravity(Gravity.CENTER, 0, 0);
+        toast.show();
+
+        Log.d("TEST", "current hand : " + str + "  computer: " + currentMyHand);
+    }
 
     private void onPlayAnimation(View unusedView) {
 
+//        if (animator == null || !animator.isRunning()) {
+//            AnimationData data = andyRenderable.getAnimationData(nextAnimation);
+//            nextAnimation = (nextAnimation + 1) % andyRenderable.getAnimationDataCount();
+//            animator = new ModelAnimator(data, andyRenderable);
+//            animator.start();
+//            Toast toast = Toast.makeText(this, data.getName(), Toast.LENGTH_SHORT);
+//            Log.d(
+//                    TAG,
+//                    String.format(
+//                            "Starting animation %s - %d ms long", data.getName(), data.getDurationMs()));
+//            toast.setGravity(Gravity.CENTER, 0, 0);
+//            toast.show();
+//        }
         if (animator == null || !animator.isRunning()) {
-            AnimationData data = andyRenderable.getAnimationData(nextAnimation);
-            nextAnimation = (nextAnimation + 1) % andyRenderable.getAnimationDataCount();
-            animator = new ModelAnimator(data, andyRenderable);
+            AnimationData data = handRenderable.getAnimationData(nextAnimation);
+            nextAnimation = (nextAnimation + 1) % handRenderable.getAnimationDataCount();
+            animator = new ModelAnimator(data, handRenderable);
             animator.start();
             Toast toast = Toast.makeText(this, data.getName(), Toast.LENGTH_SHORT);
             Log.d(
@@ -158,38 +274,48 @@ public class ClassifierActivity extends CameraActivity implements OnImageAvailab
      * Used as the listener for setOnTapArPlaneListener.
      */
     private void onPlaneTap(HitResult hitResult, Plane unusedPlane, MotionEvent unusedMotionEvent) {
-        if (andyRenderable == null || hatRenderable == null) {
+        if (andyRenderable == null || hatRenderable == null || handRenderable == null) {
             return;
         }
         // Create the Anchor.
         Anchor anchor = hitResult.createAnchor();
 
+//        if (anchorNode == null) {
+//            anchorNode = new AnchorNode(anchor);
+//            anchorNode.setParent(arFragment.getArSceneView().getScene());
+//
+//            andy = new SkeletonNode();
+//
+//            andy.setParent(anchorNode);
+//            andy.setRenderable(andyRenderable);
+//            hatNode = new Node();
+//
+//            // Attach a node to the bone.  This node takes the internal scale of the bone, so any
+//            // renderables should be added to child nodes with the world pose reset.
+//            // This also allows for tweaking the position relative to the bone.
+//            Node boneNode = new Node();
+//            boneNode.setParent(andy);
+//            andy.setBoneAttachment(HAT_BONE_NAME, boneNode);
+//            hatNode.setRenderable(hatRenderable);
+//            hatNode.setParent(boneNode);
+//            hatNode.setWorldScale(Vector3.one());
+//            hatNode.setWorldRotation(Quaternion.identity());
+//            Vector3 pos = hatNode.getWorldPosition();
+//
+//            // Lower the hat down over the antennae.
+//            pos.y -= .1f;
+//
+//            hatNode.setWorldPosition(pos);
+//        }
         if (anchorNode == null) {
             anchorNode = new AnchorNode(anchor);
             anchorNode.setParent(arFragment.getArSceneView().getScene());
 
-            andy = new SkeletonNode();
+            hand = new SkeletonNode();
 
-            andy.setParent(anchorNode);
-            andy.setRenderable(andyRenderable);
-            hatNode = new Node();
-
-            // Attach a node to the bone.  This node takes the internal scale of the bone, so any
-            // renderables should be added to child nodes with the world pose reset.
-            // This also allows for tweaking the position relative to the bone.
-            Node boneNode = new Node();
-            boneNode.setParent(andy);
-            andy.setBoneAttachment(HAT_BONE_NAME, boneNode);
-            hatNode.setRenderable(hatRenderable);
-            hatNode.setParent(boneNode);
-            hatNode.setWorldScale(Vector3.one());
-            hatNode.setWorldRotation(Quaternion.identity());
-            Vector3 pos = hatNode.getWorldPosition();
-
-            // Lower the hat down over the antennae.
-            pos.y -= .1f;
-
-            hatNode.setWorldPosition(pos);
+            hand.setParent(anchorNode);
+            hand.setRenderable(handRenderable);
+            hand.setWorldScale(new Vector3(0.3f, 0.3f, 0.3f));
         }
     }
     /**
@@ -212,7 +338,7 @@ public class ClassifierActivity extends CameraActivity implements OnImageAvailab
                 if (image != null) {
                     image.close();
                 }
-                Log.e(LOGGING_TAG, ex.getMessage());
+                // Log.e(LOGGING_TAG, ex.getMessage());
             }catch (NoClassDefFoundError ex) {
                 if (image != null) {
                     image.close();
@@ -220,17 +346,29 @@ public class ClassifierActivity extends CameraActivity implements OnImageAvailab
                 Log.e(LOGGING_TAG, ex.getMessage());
             }
 
-            // TODO 지금 실행 안되고 있음 !
             Log.d("TEST ClassifierActivity", "runInBackground( recognizer ) 시작");
             runInBackground(() -> {
                 final long startTime = SystemClock.uptimeMillis();
                 final List<Recognition> results = recognizer.recognizeImage(croppedBitmap);
+
                 lastProcessingTimeMs = SystemClock.uptimeMillis() - startTime;
                 overlayView.setResults(results);
                 // speak(results);
                 requestRender();
                 lock=true; //onframeupdate 락 해제
                 Log.d("TEST ClassifierActivity", "결과 : " + results.toString());
+
+                if (results.size() > 0) {
+                    float handAccuracy = results.get(0).getConfidence();
+
+                    //최대 정확도가 50% 아래면 저장 안하고 50% 위면 현재 상태 반영
+                    if(handAccuracy < 0.5){
+                        Log.d(TAG, "현재 상태 : " + currentMyHand + "정확도 : " + handAccuracy);
+                    }else{
+                        currentMyHand = results.get(0).getTitle();
+                        Log.d(TAG, "현재 상태 : " + currentMyHand + "정확도 : " + handAccuracy);
+                    }
+                }
             });
         }
 
@@ -321,8 +459,10 @@ public class ClassifierActivity extends CameraActivity implements OnImageAvailab
     void setRenderable(int id, ModelRenderable renderable) {
         if (id == ANDY_RENDERABLE) {
             this.andyRenderable = renderable;
-        } else {
+        } else if (id == HAT_RENDERABLE){
             this.hatRenderable = renderable;
+        } else if (id == HAND_RENDERABLE) {
+            this.handRenderable = renderable;
         }
     }
 
@@ -361,7 +501,7 @@ public class ClassifierActivity extends CameraActivity implements OnImageAvailab
                 INPUT_SIZE, INPUT_SIZE, sensorOrientation, MAINTAIN_ASPECT);
         frameToCropTransform.invert(new Matrix());
 
-        addCallback((final Canvas canvas) -> renderAdditionalInformation(canvas));
+        // addCallback((final Canvas canvas) -> renderAdditionalInformation(canvas));
 
     }
 
@@ -391,7 +531,6 @@ public class ClassifierActivity extends CameraActivity implements OnImageAvailab
             Log.e(LOGGING_TAG, ex.getMessage());
         }
 
-        // TODO 지금 실행 안되고 있음 !
         Log.d("TEST ClassifierActivity", "runInBackground( recognizer ) 시작");
         runInBackground(() -> {
             final long startTime = SystemClock.uptimeMillis();
